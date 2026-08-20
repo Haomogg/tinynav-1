@@ -513,6 +513,7 @@ class RelocalizationPose(Node):
 
 def main(
     tinynav_map_path: Path,
+    splat_path: Path | None = None,
 ) -> None:
     server = viser.ViserServer()
     server.scene.world_axes.visible = True
@@ -990,8 +991,11 @@ def main(
                     c.camera.position = target_position
                     c.camera.wxyz = target_wxyz
 
-    # Load splat or point cloud files
-    splat_path = Path(f"{tinynav_map_path}/splat.ply")
+    # Load splat or point cloud files. --splat-path overrides the default
+    # <map>/splat.ply so results from different pipelines (splat_fastgs.ply,
+    # splat_depthsplat.ply, ...) can be viewed against the same map without renaming.
+    if splat_path is None:
+        splat_path = Path(f"{tinynav_map_path}/splat.ply")
     pointcloud_path = Path(f"{tinynav_map_path}/pointcloud.ply")
 
     if splat_path.exists():
