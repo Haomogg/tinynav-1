@@ -2,6 +2,8 @@
 set -euo pipefail
 
 # Usage: run_rosbag_record.sh [--output DIR]
+#   DIR may be either the bag directory to create, or an existing directory to
+#   record into -- in the latter case a timestamped map_record_* subdir is used.
 #   If --output is not given, a timestamped dir is created under XDG_DATA_HOME/tinynav/rosbags.
 
 output_dir=""
@@ -12,15 +14,22 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+timestamp="$(date +%Y%m%d_%H%M%S)"
+
 if [ -z "$output_dir" ]; then
     xdg_data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
-    record_root="${xdg_data_home}/tinynav/rosbags"
-    timestamp="$(date +%Y%m%d_%H%M%S)"
-    output_dir="${record_root}/map_record_${timestamp}"
-    mkdir -p "${record_root}"
-else
-    mkdir -p "$(dirname "$output_dir")"
+    output_dir="${xdg_data_home}/tinynav/rosbags"
+    mkdir -p "$output_dir"
 fi
+
+# ros2 bag record refuses to write into an existing directory, so treat one as a
+# record root and create a fresh bag inside it.
+if [ -d "$output_dir" ]; then
+    output_dir="${output_dir%/}/map_record_${timestamp}"
+fi
+
+mkdir -p "$(dirname "$output_dir")"
+echo "Recording to ${output_dir}"
 
 ros2 bag record \
     --output "${output_dir}" \
@@ -31,9 +40,6 @@ ros2 bag record \
     /camera/camera/infra2/camera_info \
     /camera/camera/infra2/image_rect_raw \
     /camera/camera/infra2/metadata \
-    /camera/camera/depth/image_rect_raw \
-    /camera/camera/extrinsics/depth_to_infra1 \
-    /camera/camera/extrinsics/depth_to_infra2 \
     /camera/camera/imu \
     /camera/camera/color/image_raw \
     /camera/camera/color/camera_info \
