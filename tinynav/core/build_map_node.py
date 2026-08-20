@@ -676,6 +676,14 @@ class BuildMapNode(Node):
             # In this code path, TF matrix is interpreted as child -> frame.
             if frame_id == "cam_left" and child_frame_id == "cam_rgb":
                 self.T_rgb_to_infra1 = T
+            # The driver used for the office recordings (Insight9) publishes its own naming
+            # (camera_camera_left/right/rgb) instead of the camera_link + *_optical_frame
+            # tree above. Without this case T_rgb_to_infra1 stays None and every
+            # downstream tool that needs the RGB extrinsic -- the nerf/depthsplat
+            # converters, the BA refiner -- fails on a 0-d array. Same child -> frame
+            # reading as the looper case.
+            if frame_id == "camera_camera_left" and child_frame_id == "camera_camera_rgb":
+                self.T_rgb_to_infra1 = T
 
         if T_infra1_optical_to_infra1 is not None and T_rgb_optical_to_rgb is not None and T_infra1_to_link is not None and T_rgb_to_link is not None:
             self.T_rgb_to_infra1 = np.linalg.inv(T_infra1_optical_to_infra1) @ np.linalg.inv(T_infra1_to_link) @ T_rgb_to_link @ T_rgb_optical_to_rgb
